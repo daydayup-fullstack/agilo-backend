@@ -26,18 +26,9 @@ interface Project {
   colorIndex: number;
   iconIndex: number;
   createdOn: number;
-  dueData: number;
+  dueDate: number;
   columnOrder: string[];
   activeUsers: string[];
-}
-
-interface Story {
-  who: string;
-  what: string;
-  when: any;
-  from?: any;
-  to?: any;
-  payload?: any;
 }
 
 interface Workspace {
@@ -63,9 +54,9 @@ interface Task {
   dueDate?: any;
   authorId: string;
   assignedUserIds: string[];
+  projectIds: string[];
   likedBy: string[];
   attachments: string[];
-  stories: Story[];
 }
 
 admin.initializeApp({
@@ -83,11 +74,63 @@ app.get("/", (req, res) => {
   });
 });
 
+const loadProjects = async (workspaceId: string): Promise<any> => {
+  const workspaceSnapshot = await db.doc(`/workspaces/${workspaceId}`).get();
+
+  let {
+    type,
+    projectOrder,
+    members,
+    description,
+    name,
+  } = workspaceSnapshot.data() as any;
+
+  const workspace = {
+    id: workspaceId,
+    type,
+    projectsInOrder: projectOrder,
+    members,
+    name,
+    description,
+  } as Workspace;
+
+  let projectsSnapshot = await db
+    .collection("projects")
+    .where("workspace", "==", workspaceId)
+    .get();
+
+  const projectsData = projectsSnapshot.docs.map((doc) => {
+    let {
+      createdOn,
+      columnOrder,
+      colorIndex,
+      iconIndex,
+      name,
+      activeUsers,
+    } = doc.data() as Project;
+
+    return {
+      id: doc.id,
+      createdOn,
+      columnOrder,
+      colorIndex,
+      iconIndex,
+      name,
+      activeUsers,
+    };
+  });
+
+  const result = {
+    workspace: workspace,
+    allProjects: projectsData,
+  };
+  return result;
+};
+
 // Level 1 --- user info after login ---> Home
 // Load default workspace, projects in order, project basic information
 app.get("/users/:id", async (req, res, next) => {
   const userId = req.params.id;
-  const workspaceId = req.params.workspaceId;
 
   try {
     const snapshot = await db.doc(`/users/${userId}`).get();
@@ -98,55 +141,13 @@ app.get("/users/:id", async (req, res, next) => {
     } as User;
 
     const workspaceId = user.workspaces[0];
-    const workspaceSnapshot = await db.doc(`/workspaces/${workspaceId}`).get();
 
-    let {
-      type,
-      projectOrder,
-      members,
-      description,
-      name,
-    } = workspaceSnapshot.data() as any;
-
-    const workspace = {
-      id: workspaceId,
-      type,
-      projectsInOrder: projectOrder,
-      members,
-      name,
-      description,
-    } as Workspace;
-
-    let projectsSnapshot = await db
-      .collection("projects")
-      .where("workspace", "==", workspaceId)
-      .get();
-
-    const projectsData = projectsSnapshot.docs.map((doc) => {
-      let {
-        createdOn,
-        columnOrder,
-        colorIndex,
-        iconIndex,
-        name,
-        activeUsers,
-      } = doc.data() as Project;
-
-      return {
-        id: doc.id,
-        createdOn,
-        columnOrder,
-        colorIndex,
-        iconIndex,
-        name,
-        activeUsers,
-      };
-    });
+    const data = await loadProjects(workspaceId);
 
     const result = {
       user: user,
-      workspace: workspace,
-      allProjects: projectsData,
+      workspace: data.workspace,
+      allProjects: data.allProjects,
     } as HomepageDataType;
 
     res.status(200).json(result);
@@ -199,22 +200,27 @@ app.get("/projects/:id", async (req, res, next) => {
   res.status(200).json(result);
 });
 
-// Level 3 (possible) --- task details ---> stories
-// load more information about particular task
-app.get("/projects/:projectId/tasks/:taskId", async (req, res, next) => {
-  const taskId = req.params.taskId;
+// --- get workspace ---
+app.get("/workspaces/:workspaceId", async (req, res) => {
+  const workspaceId = req.params.workspaceId;
+  try {
+    const data = await loadProjects(workspaceId);
 
-  const stories = await db
-    .collection("stories")
-    .where("taskId", "==", taskId)
-    .get();
+    const result = {
+      workspace: data.workspace,
+      allProjects: data.allProjects,
+    };
 
-  const result = {
-    stories: stories.docs.map((doc) => doc.data()),
-  };
+    res.status(200).json(result);
 
-  res.json(result);
+  } catch (e) {
+    console.log(e);
+  }
 });
+
+// todo --- add user ---
+
+// todo --- add workspace ---
 
 // --- add project --->
 app.post("/projects", async (req, res, next) => {
@@ -242,6 +248,27 @@ app.post("/projects", async (req, res, next) => {
     console.log(e);
   }
 });
+
+// --- delete project ---
+app.delete("/projects/:projectId", async (req, res) => {
+  const { workspace, projectOrder } = req.body;
+  const projectId = req.params.projectId;
+
+  try {
+    await db.doc(`/projects/${projectId}`).delete();
+    await db.doc(`/workspaces/${workspace}`).update({
+      projectOrder,
+    });
+
+    res
+      .status(200)
+      .send({ message: `project ${projectId} is successfully deleted.` });
+  } catch (e) {
+    console.log(e);
+  }
+});
+
+// todo: --- update project --- can be so many things to update
 
 // --- add task ---
 app.post("/projects/:projectId/tasks", async (req, res) => {
@@ -283,28 +310,62 @@ app.post("/projects/:projectId/tasks", async (req, res) => {
   });
 });
 
-// --- delete project ---
-app.delete("/projects/:projectId", async (req, res) => {
-  const { workspace, projectOrder } = req.body;
-  const projectId = req.params.projectId;
+// --- delete task ---
+app.delete(
+  "/projects/:projectId/columns/:columnId/tasks/:taskId",
+  async (req, res) => {
+    const projectId = req.params.projectId;
+    const columnId = req.params.columnId;
+    const taskId = req.params.taskId;
+    const task = req.body;
 
-  try {
-    await db.doc(`/projects/${projectId}`).delete();
-    await db.doc(`/workspaces/${workspace}`).update({
-      projectOrder,
-    });
+    // res.status(200).json({
+    //   projectId: projectId,
+    //   columnId: columnId,
+    //   taskId: taskId,
+    //   task: task,
+    // });
 
-    res
-      .status(200)
-      .send({ message: `project ${projectId} is successfully deleted.` });
-  } catch (e) {
-    console.log(e);
+    try {
+      // delete task from its containing column
+      const columnRef = db.doc(`columns/${columnId}`);
+      const snapshot = (await columnRef.get()) as any;
+      const newTaskIds = snapshot.data().taskIds;
+      const index = newTaskIds.indexOf(taskId);
+      newTaskIds.splice(index, 1);
+      await columnRef.update({ taskIds: newTaskIds });
+
+      if (task.projectIds.length === 1 && task.projectIds[0] === projectId) {
+        // delete the task itself
+        await db.doc(`/tasks/${taskId}`).delete();
+      } else {
+        // todo - only delete project id from task's projectIds, and update the database
+        const index = task.projectIds.indexOf(projectId);
+        const newProjectIds = [...task.projectIds];
+        newProjectIds.splice(index, 1);
+
+        await db.doc(`/tasks/${taskId}`).update({
+          projectIds: newProjectIds,
+        });
+
+        res.status(200).json({ message: `task ${taskId} is deleted` });
+      }
+    } catch (e) {
+      console.log(e);
+    }
   }
-});
+);
 
+// todo: --- update task ---
+
+// todo:  --- add column ---
+
+// todo:  --- delete column ---
+
+// todo: --- update column ---
 
 // ============ get users under a particular workspace  ===================
-app.get("/workspace/:workspaceId/members", async (req, res) => {
+app.get("/workspaces/:workspaceId/members", async (req, res) => {
   const workspaceId = req.params.workspaceId;
 
   try {
