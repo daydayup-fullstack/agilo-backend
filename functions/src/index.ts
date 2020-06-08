@@ -3,6 +3,12 @@ import * as admin from "firebase-admin";
 import * as express from "express";
 
 interface HomepageDataType {
+  user: User;
+  workspace: Workspace;
+  allProjects: Project[];
+}
+
+interface User {
   id: string;
   avatar: string;
   colorIndex: number;
@@ -12,26 +18,17 @@ interface HomepageDataType {
   privateProjects: string[];
   starredProjects: string[];
   workspaces: string[];
-  currentWorkspace: {
-    id: string;
-    type: string;
-    projectOrder: string[];
-    members?: string;
-    description?: string;
-    name?: string;
-
-    projects: any;
-  };
 }
 
 interface Project {
   id: string;
+  name: string;
   colorIndex: number;
   iconIndex: number;
-  name: string;
-  createdOn: any;
+  createdOn: number;
+  dueData: number;
   columnOrder: string[];
-  columns?: any;
+  activeUsers: string[];
 }
 
 interface Story {
@@ -41,6 +38,20 @@ interface Story {
   from?: any;
   to?: any;
   payload?: any;
+}
+
+interface Workspace {
+  id: string;
+  type: string;
+  projectsInOrder: string[];
+  members: string[];
+  description?: string;
+  name: string;
+}
+
+interface Column {
+  title: string;
+  taskIds: string[];
 }
 
 interface Task {
@@ -55,20 +66,6 @@ interface Task {
   likedBy: string[];
   attachments: string[];
   stories: Story[];
-}
-
-interface Workspace {
-  id: string;
-  description?: string;
-  members?: string[];
-  name: string;
-  type: string;
-  projectOrder: string[];
-}
-
-interface Column {
-  title: string;
-  taskIds: string[];
 }
 
 admin.initializeApp({
@@ -86,22 +83,22 @@ app.get("/", (req, res) => {
   });
 });
 
-// --- user info after login ---> Home
+// Level 1 --- user info after login ---> Home
 // Load default workspace, projects in order, project basic information
 app.get("/users/:id", async (req, res, next) => {
   const userId = req.params.id;
+  const workspaceId = req.params.workspaceId;
+
   try {
     const snapshot = await db.doc(`/users/${userId}`).get();
 
     let user = {
       id: snapshot.id,
       ...snapshot.data(),
-    } as HomepageDataType;
+    } as User;
 
-    const defaultWorkspaceId = user.workspaces[0];
-    const workspaceSnapshot = await db
-      .doc(`/workspaces/${defaultWorkspaceId}`)
-      .get();
+    const workspaceId = user.workspaces[0];
+    const workspaceSnapshot = await db.doc(`/workspaces/${workspaceId}`).get();
 
     let {
       type,
@@ -111,28 +108,18 @@ app.get("/users/:id", async (req, res, next) => {
       name,
     } = workspaceSnapshot.data() as any;
 
-    if (type === "team") {
-      user.currentWorkspace = {
-        id: defaultWorkspaceId,
-        type,
-        projectOrder,
-        members,
-        name,
-        description,
-        projects: {},
-      };
-    } else {
-      user.currentWorkspace = {
-        id: defaultWorkspaceId,
-        type,
-        projectOrder,
-        projects: {},
-      };
-    }
+    const workspace = {
+      id: workspaceId,
+      type,
+      projectsInOrder: projectOrder,
+      members,
+      name,
+      description,
+    } as Workspace;
 
     let projectsSnapshot = await db
       .collection("projects")
-      .where("workspace", "==", defaultWorkspaceId)
+      .where("workspace", "==", workspaceId)
       .get();
 
     const projectsData = projectsSnapshot.docs.map((doc) => {
@@ -142,7 +129,7 @@ app.get("/users/:id", async (req, res, next) => {
         colorIndex,
         iconIndex,
         name,
-        columns,
+        activeUsers,
       } = doc.data() as Project;
 
       return {
@@ -152,26 +139,25 @@ app.get("/users/:id", async (req, res, next) => {
         colorIndex,
         iconIndex,
         name,
-        columns,
+        activeUsers,
       };
     });
 
-    let data = {};
+    const result = {
+      user: user,
+      workspace: workspace,
+      allProjects: projectsData,
+    } as HomepageDataType;
 
-    projectsData.map((p) => {
-      data = { ...data, [p.id]: p };
-    });
-
-    user.currentWorkspace.projects = data;
-
-    res.status(200).json(user);
+    res.status(200).json(result);
   } catch (e) {
     console.log(e);
   }
 });
 
-// --- project detail ---> Project view
+// Level 2 --- project detail ---> Project view
 // Load all the tasks under selected projects, showing columns in order, task basic information
+// get columns and tasks
 app.get("/projects/:id", async (req, res, next) => {
   const projectId = req.params.id;
 
@@ -180,7 +166,13 @@ app.get("/projects/:id", async (req, res, next) => {
     .where("projectId", "array-contains", projectId)
     .get();
 
+  const columnSnapshot = await db
+    .collection("columns")
+    .where("projectId", "==", projectId)
+    .get();
+
   let tasks = {};
+  let columns = {};
 
   snapshot.docs.map((doc) => {
     tasks = {
@@ -192,7 +184,36 @@ app.get("/projects/:id", async (req, res, next) => {
     };
   });
 
-  res.status(200).json(tasks);
+  columnSnapshot.docs.map((doc) => {
+    columns = {
+      ...columns,
+      [doc.id]: {
+        id: doc.id,
+        ...doc.data(),
+      },
+    };
+  });
+
+  const result = { columns: columns, tasks: tasks };
+
+  res.status(200).json(result);
+});
+
+// Level 3 (possible) --- task details ---> stories
+// load more information about particular task
+app.get("/projects/:projectId/tasks/:taskId", async (req, res, next) => {
+  const taskId = req.params.taskId;
+
+  const stories = await db
+    .collection("stories")
+    .where("taskId", "==", taskId)
+    .get();
+
+  const result = {
+    stories: stories.docs.map((doc) => doc.data()),
+  };
+
+  res.json(result);
 });
 
 // --- add project --->
@@ -222,26 +243,10 @@ app.post("/projects", async (req, res, next) => {
   }
 });
 
-// --- task details ---> stories, attachments
-app.get("/projects/:projectId/tasks/:taskId", async (req, res, next) => {
-  const taskId = req.params.taskId;
-
-  const stories = await db
-    .collection("stories")
-    .where("taskId", "==", taskId)
-    .get();
-
-  const result = {
-    stories: stories.docs.map((doc) => doc.data()),
-  };
-
-  res.json(result);
-});
-
 // --- add task ---
 app.post("/projects/:projectId/tasks", async (req, res) => {
   const projectId = req.params.projectId;
-  let { name, description, authorId, columns, targetColumn } = req.body;
+  let { name, description, authorId, columnId, taskIds } = req.body;
 
   const taskId = db.collection("tasks").doc().id;
   const storyId = db.collection("stories").doc().id;
@@ -268,23 +273,17 @@ app.post("/projects/:projectId/tasks", async (req, res) => {
       stories: [storyId],
     });
 
-  // todo - default add task to first column
-
-  const updatedTaskIds = [taskId, ...columns[targetColumn].taskIds];
-  columns[targetColumn].taskIds = updatedTaskIds;
-
-  await db.doc(`/projects/${projectId}`).update({
-    columns: columns,
+  await db.doc(`/columns/${columnId}`).update({
+    taskIds: [taskId, ...taskIds],
   });
 
   res.status(200).json({
     task: taskId,
-    column: targetColumn,
     message: "Task added successfully",
-    columns: columns,
   });
 });
 
+// --- delete project ---
 app.delete("/projects/:projectId", async (req, res) => {
   const { workspace, projectOrder } = req.body;
   const projectId = req.params.projectId;
@@ -303,19 +302,28 @@ app.delete("/projects/:projectId", async (req, res) => {
   }
 });
 
-app.get("/users", async (req, res) => {
-  const snapshot = await db.collection("users").get();
-  let result = {};
-  snapshot.docs.map((doc) => {
-    result = {
-      ...result,
-      [doc.id]: {
+
+// ============ get users under a particular workspace  ===================
+app.get("/workspace/:workspaceId/members", async (req, res) => {
+  const workspaceId = req.params.workspaceId;
+
+  try {
+    const snaphot = await db
+      .collection("/users")
+      .where("workspaces", "array-contains", workspaceId)
+      .get();
+
+    const result = snaphot.docs.map((doc) => {
+      return {
         id: doc.id,
         ...doc.data(),
-      },
-    };
-  });
-  res.json(result);
+      };
+    });
+
+    res.status(200).json(result);
+  } catch (e) {
+    console.log(e);
+  }
 });
 
 export const api = functions.https.onRequest(app);
