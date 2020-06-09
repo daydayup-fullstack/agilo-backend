@@ -66,6 +66,13 @@ admin.initializeApp({
 const app = express();
 const db = admin.firestore();
 
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "*");
+  res.header("Access-Control-Allow-Methods", "*");
+  next();
+});
+
 // --- handshake ---
 app.get("/", (req, res) => {
   res.send({
@@ -212,7 +219,6 @@ app.get("/workspaces/:workspaceId", async (req, res) => {
     };
 
     res.status(200).json(result);
-
   } catch (e) {
     console.log(e);
   }
