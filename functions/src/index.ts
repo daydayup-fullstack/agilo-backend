@@ -171,7 +171,7 @@ app.get("/projects/:id", async (req, res, next) => {
 
   const snapshot = await db
     .collection("tasks")
-    .where("projectId", "array-contains", projectId)
+    .where("projectIds", "array-contains", projectId)
     .get();
 
   const columnSnapshot = await db
