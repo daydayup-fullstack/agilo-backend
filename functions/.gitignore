@@ -9,3 +9,4 @@ node_modules/
 
 lib/serviceAccount.json
 src/serviceAccount.json
+/.runtimeconfig.json
