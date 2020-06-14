@@ -31,5 +31,4 @@
 
 - [x] `POST /projects/:projectId/tasks`
 - [x] `DELETE /projects/:projectId/columns/:columnId/tasks/:taskId`
-- [ ] `PUT /projects/:projectId/columns/:columnId/tasks/:taskId`
-- [ ] `GET /tasks/:taskId`
+- [x] `PUT /tasks/:taskId`

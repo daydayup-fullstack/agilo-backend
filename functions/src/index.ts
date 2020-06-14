@@ -362,6 +362,20 @@ app.delete(
 );
 
 // todo: --- update task ---
+app.put(`/tasks/:taskId`, async (req, res) => {
+    const {taskId} = req.params;
+    try {
+        await db.doc(`/tasks/${taskId}`).update({
+            ...req.body,
+        });
+
+        res
+            .status(200)
+            .json({message: `task ${taskId} has been successfully updated`});
+    } catch (e) {
+        console.log(e);
+    }
+});
 
 app.post(`/projects/:projectId/columns`, async (req, res) => {
     const {projectId} = req.params;
