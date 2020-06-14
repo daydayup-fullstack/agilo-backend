@@ -363,7 +363,6 @@ app.delete(
 
 // todo: --- update task ---
 
-// todo:  --- add column ---
 app.post(`/projects/:projectId/columns`, async (req, res) => {
     const {projectId} = req.params;
     const {id, title} = req.body;
@@ -424,7 +423,21 @@ app.delete("/projects/:projectId/columns/:columnId", async (req, res) => {
     }
 });
 
-// todo: --- update column ---
+app.put("/columns/:columnId", async (req, res) => {
+    const {columnId} = req.params;
+
+    try {
+        await db.doc(`/columns/${columnId}`).update({
+            ...req.body,
+        });
+
+        res.status(200).json({
+            message: `column ${columnId} has been successfully updated`,
+        });
+    } catch (e) {
+        console.log(e);
+    }
+});
 
 // ============ get users under a particular workspace  ===================
 app.get("/workspaces/:workspaceId/members", async (req, res) => {
