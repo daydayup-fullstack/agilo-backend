@@ -364,8 +364,37 @@ app.delete(
 // todo: --- update task ---
 
 // todo:  --- add column ---
+app.post(`/projects/:projectId/columns`, async (req, res) => {
+    const {projectId} = req.params;
+    const {id, title} = req.body;
 
-// todo:  --- delete column ---
+    // column - {id: clientGenereated, title: string}
+
+    try {
+        // add column
+        await db.collection(`/columns`).doc(id).set({
+            title,
+            projectId,
+            taskIds: [],
+        });
+        // add columnId to project columnOrder
+        const projectSnapshot = await db.doc(`/projects/${projectId}`).get();
+
+        if (projectSnapshot.data()) {
+            const {columnOrder} = projectSnapshot.data() as Project;
+            await db.doc(`/projects/${projectId}`).update({
+                columnOrder: [...columnOrder, id],
+            });
+        }
+
+        res.status(201).json({
+            message: `new column ${id} has been successfully created`,
+        });
+    } catch (e) {
+        console.log(e);
+    }
+});
+
 app.delete("/projects/:projectId/columns/:columnId", async (req, res) => {
     const {projectId, columnId} = req.params;
 
