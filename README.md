@@ -1,38 +1,35 @@
 # Backend for Agilo (Temporary)
+
 ### Hosted on Firebase cloud function
 
-
-- [x] `GET /api` 
-    - Handshake
+- [x] `GET /api`
+  - Handshake
 - [x] `GET /user/:id` - Depth 1
-    - Load user, default workspace & projects basic information
+  - Load user, default workspace & projects basic information
 
 ### Workspace
-- [x] `GET /workspaces/:workspaceId/members`
-    - Load all the member under workspace
-    
 
- ### Project
+- [x] `GET /workspaces/:workspaceId/members`
+  - Load all the member under workspace
+
+### Project
+
 - [x] `POST /projects`
-    - Create a new project 
+  - Create a new project
 - [x] `DELETE /projects/:projectId`
 - [ ] `PUT /projects/:projectId`
 - [x] `GET /projects/:id` - Depth 2
-    - Load all columns & tasks under a project
+  - Load all columns & tasks under a project
 
 ### Column
+
 - [ ] `POST /projects/:projectId/columns`
-- [ ] `DELETE /columns/:columnId`
+- [x] `DELETE /projects/:projectId/columns/:columnId`
 - [ ] `PUT /columns/:columnId`
 
 ### Task
+
 - [x] `POST /projects/:projectId/tasks`
 - [x] `DELETE /projects/:projectId/columns/:columnId/tasks/:taskId`
 - [ ] `PUT /projects/:projectId/columns/:columnId/tasks/:taskId`
 - [ ] `GET /tasks/:taskId`
-
-
-
-
-
-
