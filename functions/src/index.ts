@@ -229,7 +229,7 @@ app.get("/workspaces/:workspaceId", async (req, res) => {
 
 // --- add project --->
 app.post("/projects", async (req, res, next) => {
-    const {name, colorIndex, iconIndex, workspace, projectOrder} = req.body;
+    const {name, colorIndex, iconIndex, workspace, projectOrder, id} = req.body;
 
     try {
         await db.collection("projects").doc().set({
@@ -237,18 +237,16 @@ app.post("/projects", async (req, res, next) => {
             colorIndex,
             iconIndex,
             createdOn: admin.firestore.Timestamp.now(),
-            columns: null,
+            columns: {},
             columnOrder: [],
             workspace,
         });
 
-        const newProjectId = db.collection("/workspaces").doc().id;
-
         await db.doc(`/workspaces/${workspace}`).update({
-            projectOrder: [...projectOrder, newProjectId],
+            projectOrder: [...projectOrder, id],
         });
 
-        res.status(200).send(`Project ${newProjectId} - successfully added`);
+        res.status(201).send(`Project ${id} - successfully added`);
     } catch (e) {
         console.log(e);
     }
@@ -291,40 +289,27 @@ app.put(`/projects/:projectId`, async (req, res) => {
 });
 
 // --- add task ---
-app.post("/projects/:projectId/tasks", async (req, res) => {
-    const projectId = req.params.projectId;
-    let {name, description, authorId, columnId, taskIds} = req.body;
+app.post("/tasks", async (req, res) => {
+    let {name, description, projectId, authorId, columnId, taskIds} = req.body;
 
     const taskId = db.collection("tasks").doc().id;
-    const storyId = db.collection("stories").doc().id;
 
-    await db.collection("stories").doc(storyId).set({
-        what: "CREATED",
-        when: admin.firestore.Timestamp.now(),
-        who: authorId,
-        taskId,
+    await db.collection("tasks").doc(taskId).set({
+        name,
+        description,
+        authorId,
+        projectId,
+        isCompleted: false,
+        createdOn: admin.firestore.Timestamp.now(),
+        assignedUserIds: [],
+        attachments: [],
     });
-
-    await db
-        .collection("tasks")
-        .doc(taskId)
-        .set({
-            name,
-            description,
-            authorId,
-            projectId,
-            isCompleted: false,
-            createdOn: admin.firestore.Timestamp.now(),
-            assignedUserIds: [],
-            attachments: [],
-            stories: [storyId],
-        });
 
     await db.doc(`/columns/${columnId}`).update({
         taskIds: [taskId, ...taskIds],
     });
 
-    res.status(200).json({
+    res.status(201).json({
         task: taskId,
         message: "Task added successfully",
     });
@@ -338,13 +323,6 @@ app.delete(
         const columnId = req.params.columnId;
         const taskId = req.params.taskId;
         const task = req.body;
-
-        // res.status(200).json({
-        //   projectId: projectId,
-        //   columnId: columnId,
-        //   taskId: taskId,
-        //   task: task,
-        // });
 
         try {
             // delete task from its containing column
@@ -391,9 +369,8 @@ app.put(`/tasks/:taskId`, async (req, res) => {
     }
 });
 
-app.post(`/projects/:projectId/columns`, async (req, res) => {
-    const {projectId} = req.params;
-    const {id, title} = req.body;
+app.post(`/columns`, async (req, res) => {
+    const {id, title, projectId} = req.body;
 
     // column - {id: clientGenereated, title: string}
 
