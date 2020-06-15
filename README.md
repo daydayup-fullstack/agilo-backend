@@ -23,12 +23,12 @@
 
 ### Column
 
-- [x] `POST /projects/:projectId/columns`
+- [x] `POST /columns`
 - [x] `DELETE /projects/:projectId/columns/:columnId`
 - [x] `PUT /columns/:columnId`
 
 ### Task
 
-- [x] `POST /projects/:projectId/tasks`
+- [x] `POST /tasks`
 - [x] `DELETE /projects/:projectId/columns/:columnId/tasks/:taskId`
 - [x] `PUT /tasks/:taskId`
