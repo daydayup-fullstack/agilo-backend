@@ -273,7 +273,22 @@ app.delete("/projects/:projectId", async (req, res) => {
     }
 });
 
-// todo: --- update project --- can be so many things to update
+app.put(`/projects/:projectId`, async (req, res) => {
+    const {projectId} = req.params;
+
+    try {
+        if (req.body) {
+            await db.doc(`/projects/${projectId}`).update({
+                ...req.body,
+            });
+            res.status(200).json({
+                message: `project ${projectId} updated`,
+            });
+        }
+    } catch (e) {
+        console.log(e);
+    }
+});
 
 // --- add task ---
 app.post("/projects/:projectId/tasks", async (req, res) => {
@@ -361,7 +376,6 @@ app.delete(
     }
 );
 
-// todo: --- update task ---
 app.put(`/tasks/:taskId`, async (req, res) => {
     const {taskId} = req.params;
     try {
@@ -441,13 +455,15 @@ app.put("/columns/:columnId", async (req, res) => {
     const {columnId} = req.params;
 
     try {
-        await db.doc(`/columns/${columnId}`).update({
-            ...req.body,
-        });
+        if (req.body) {
+            await db.doc(`/columns/${columnId}`).update({
+                ...req.body,
+            });
 
-        res.status(200).json({
-            message: `column ${columnId} has been successfully updated`,
-        });
+            res.status(200).json({
+                message: `column ${columnId} has been successfully updated`,
+            });
+        }
     } catch (e) {
         console.log(e);
     }

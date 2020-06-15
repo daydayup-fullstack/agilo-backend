@@ -17,7 +17,7 @@
 - [x] `POST /projects`
   - Create a new project
 - [x] `DELETE /projects/:projectId`
-- [ ] `PUT /projects/:projectId`
+- [x] `PUT /projects/:projectId`
 - [x] `GET /projects/:id` - Depth 2
   - Load all columns & tasks under a project
 
