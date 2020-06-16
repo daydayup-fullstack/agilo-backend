@@ -390,13 +390,12 @@ app.post(`/columns`, async (req, res) => {
     }
 });
 
-app.delete("/projects/:projectId/columns/:columnId", async (req, res) => {
-    const {projectId, columnId} = req.params;
+app.delete("/columns/:columnId", async (req, res) => {
+    const {columnId} = req.params;
 
     try {
         //  delete the column
         await db.doc(`/columns/${columnId}`).delete();
-        const projectSnapshot = await db.doc(`/projects/${projectId}`).get();
 
         //  delete all the tasks under this column
         res.status(200).json({
