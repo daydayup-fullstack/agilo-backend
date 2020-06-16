@@ -381,15 +381,6 @@ app.post(`/columns`, async (req, res) => {
             projectId,
             taskIds: [],
         });
-        // add columnId to project columnOrder
-        const projectSnapshot = await db.doc(`/projects/${projectId}`).get();
-
-        if (projectSnapshot.data()) {
-            const {columnOrder} = projectSnapshot.data() as Project;
-            await db.doc(`/projects/${projectId}`).update({
-                columnOrder: [...columnOrder, id],
-            });
-        }
 
         res.status(201).json({
             message: `new column ${id} has been successfully created`,
