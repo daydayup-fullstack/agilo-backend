@@ -232,14 +232,14 @@ app.post("/projects", async (req, res, next) => {
     const {name, colorIndex, iconIndex, workspace, projectOrder, id} = req.body;
 
     try {
-        await db.collection("projects").doc().set({
+        await db.collection("projects").doc(id).set({
             name,
             colorIndex,
             iconIndex,
             createdOn: admin.firestore.Timestamp.now(),
-            columns: {},
             columnOrder: [],
             workspace,
+            activeUsers: [],
         });
 
         await db.doc(`/workspaces/${workspace}`).update({
@@ -289,83 +289,88 @@ app.put(`/projects/:projectId`, async (req, res) => {
 });
 
 // --- add task ---
-app.post("/tasks", async (req, res) => {
-    let {name, description, projectId, authorId, columnId, taskIds} = req.body;
+// app.post("/tasks", async (req, res) => {
+//     let {name, description, projectId, authorId, columnId, taskIds, id} = req.body;
 
-    const taskId = db.collection("tasks").doc().id;
+//     const taskId = id;
 
-    await db.collection("tasks").doc(taskId).set({
-        name,
-        description,
-        authorId,
-        projectId,
-        isCompleted: false,
-        createdOn: admin.firestore.Timestamp.now(),
-        assignedUserIds: [],
-        attachments: [],
-    });
+//     await db.collection("tasks").doc(taskId).set({
+//         name,
+//         description,
+//         authorId,
+//         projectId,
+//         isCompleted: false,
+//         createdOn: admin.firestore.Timestamp.now(),
+//         assignedUserIds: [],
+//         attachments: [],
+//     });
 
-    await db.doc(`/columns/${columnId}`).update({
-        taskIds: [taskId, ...taskIds],
-    });
+//     await db.doc(`/columns/${columnId}`).update({
+//         taskIds: [taskId, ...taskIds],
+//     });
 
-    res.status(201).json({
-        task: taskId,
-        message: "Task added successfully",
-    });
-});
+//     res.status(201).json({
+//         task: taskId,
+//         message: "Task added successfully",
+//     });
+// });
 
 // --- delete task ---
-app.delete(
-    "/projects/:projectId/columns/:columnId/tasks/:taskId",
-    async (req, res) => {
-        const projectId = req.params.projectId;
-        const columnId = req.params.columnId;
-        const taskId = req.params.taskId;
-        const task = req.body;
+app.delete("/tasks/:taskId", async (req, res) => {
+    const {taskId} = req.params;
 
-        try {
-            // delete task from its containing column
-            const columnRef = db.doc(`columns/${columnId}`);
-            const snapshot = (await columnRef.get()) as any;
-            const newTaskIds = snapshot.data().taskIds;
-            const index = newTaskIds.indexOf(taskId);
-            newTaskIds.splice(index, 1);
-            await columnRef.update({taskIds: newTaskIds});
-
-            if (task.projectIds.length === 1 && task.projectIds[0] === projectId) {
-                // delete the task itself
-                await db.doc(`/tasks/${taskId}`).delete();
-            } else {
-                // todo - only delete project id from task's projectIds, and update the database
-                const index = task.projectIds.indexOf(projectId);
-                const newProjectIds = [...task.projectIds];
-                newProjectIds.splice(index, 1);
-
-                await db.doc(`/tasks/${taskId}`).update({
-                    projectIds: newProjectIds,
-                });
-
-                res.status(200).json({message: `task ${taskId} is deleted`});
-            }
-        } catch (e) {
-            console.log(e);
-        }
+    try {
+        await db.doc(`/tasks/${taskId}`).delete();
+        res.status(200).json({message: `task ${taskId} deleted`});
+    } catch (e) {
+        console.log(e);
     }
-);
+});
 
 app.put(`/tasks/:taskId`, async (req, res) => {
     const {taskId} = req.params;
     try {
-        await db.doc(`/tasks/${taskId}`).update({
-            ...req.body,
-        });
+        // check to see if the task exists
+        const taskRef = db.doc(`/tasks/${taskId}`);
 
-        res
-            .status(200)
-            .json({message: `task ${taskId} has been successfully updated`});
+        const doc = await taskRef.get();
+
+        // if so , update the task
+        if (doc.exists) {
+            await taskRef.update({
+                ...req.body,
+            });
+
+            res
+                .status(200)
+                .json({message: `task ${taskId} has been successfully updated`});
+        } else {
+            // otherwise, create a new task
+            const {authorId, projectIds, columnId, name} = req.body;
+
+            await db.collection("/tasks").doc(taskId).set({
+                name,
+                authorId,
+                projectIds,
+                isCompleted: false,
+                likedBy: [],
+                createdOn: admin.firestore.Timestamp.now(),
+                assignedUserIds: [],
+                attachments: [],
+            });
+
+            const columnSnapshot = await db.doc(`/columns/${columnId}`).get();
+            const column = columnSnapshot.data() as Column;
+
+            await db.doc(`/columns/${columnId}`).update({
+                taskIds: [taskId, ...column.taskIds],
+            });
+
+            res.status(201).json({data: req.body});
+        }
     } catch (e) {
         console.log(e);
+        res.status(400).json({message: e});
     }
 });
 
