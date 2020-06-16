@@ -398,18 +398,6 @@ app.delete("/projects/:projectId/columns/:columnId", async (req, res) => {
         await db.doc(`/columns/${columnId}`).delete();
         const projectSnapshot = await db.doc(`/projects/${projectId}`).get();
 
-        // delete the columnId from its project's columnOrder
-        if (projectSnapshot.data()) {
-            const {columnOrder} = projectSnapshot.data() as Project;
-            const index = columnOrder.indexOf(columnId);
-            if (index >= 0) {
-                columnOrder.splice(index, 1);
-                await db.doc(`/projects/${projectId}`).update({
-                    columnOrder,
-                });
-            }
-        }
-
         //  delete all the tasks under this column
         res.status(200).json({
             message: `column ${columnId} has been successfully deleted.`,
