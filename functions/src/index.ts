@@ -1,63 +1,8 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import * as express from "express";
+import {Column, HomepageDataType, Project, User, Workspace} from "./interface";
 
-interface HomepageDataType {
-    user: User;
-    workspace: Workspace;
-    allProjects: Project[];
-}
-
-interface User {
-    id: string;
-    avatar: string;
-    colorIndex: number;
-    email: string;
-    firstName: string;
-    lastName: string;
-    privateProjects: string[];
-    starredProjects: string[];
-    workspaces: string[];
-}
-
-interface Project {
-    id: string;
-    name: string;
-    colorIndex: number;
-    iconIndex: number;
-    createdOn: number;
-    dueDate: number;
-    columnOrder: string[];
-    activeUsers: string[];
-}
-
-interface Workspace {
-    id: string;
-    type: string;
-    projectsInOrder: string[];
-    members: string[];
-    description?: string;
-    name: string;
-}
-
-interface Column {
-    title: string;
-    taskIds: string[];
-}
-
-interface Task {
-    id: string;
-    name: string;
-    description: string;
-    isCompleted: boolean;
-    createdOn: any;
-    dueDate?: any;
-    authorId: string;
-    assignedUserIds: string[];
-    projectIds: string[];
-    likedBy: string[];
-    attachments: string[];
-}
 
 admin.initializeApp({
     credential: admin.credential.cert(require("./serviceAccount.json")),
@@ -106,6 +51,7 @@ const loadProjects = async (workspaceId: string): Promise<any> => {
         .where("workspace", "==", workspaceId)
         .get();
 
+
     const projectsData = projectsSnapshot.docs.map((doc) => {
         let {
             createdOn,
@@ -127,8 +73,20 @@ const loadProjects = async (workspaceId: string): Promise<any> => {
         };
     });
 
+    const membersSnaphot = await db
+        .collection("/users")
+        .where("workspaces", "array-contains", workspaceId)
+        .get();
+
+    const allMembers = membersSnaphot.docs.map((doc) => {
+        return {
+            id: doc.id,
+            ...doc.data(),
+        };
+    });
+
     const result = {
-        workspace: workspace,
+        workspace: {...workspace, allMembers},
         allProjects: projectsData,
     };
     return result;
@@ -148,11 +106,26 @@ app.get("/users/:id", async (req, res, next) => {
         } as User;
 
         const workspaceId = user.workspaces[0];
-
         const data = await loadProjects(workspaceId);
 
+        const wpSnapshot = await db
+            .collection(`/workspaces`)
+            .where("members", "array-contains", userId)
+            .get();
+        let allWorkspaces = {};
+
+        wpSnapshot.docs.forEach((doc) => {
+            allWorkspaces = {
+                ...allWorkspaces,
+                [doc.id]: {
+                    id: doc.id,
+                    ...doc.data(),
+                },
+            };
+        });
+
         const result = {
-            user: user,
+            user: {...user, allWorkspaces},
             workspace: data.workspace,
             allProjects: data.allProjects,
         } as HomepageDataType;
@@ -227,6 +200,21 @@ app.get("/workspaces/:workspaceId", async (req, res) => {
 // todo --- add user ---
 // todo --- add workspace ---
 
+// --- put user ---
+app.put("/users/:userId", async (req, res) => {
+    const {userId} = req.params;
+
+    try {
+        await db.doc(`/users/${userId}`).update({
+            ...req.body,
+        });
+
+        res.status(200).json({message: `user ${userId} updated!`});
+    } catch (e) {
+        res.status(500).json({error: e});
+    }
+});
+
 // --- add project --->
 app.post("/projects", async (req, res, next) => {
     const {name, colorIndex, iconIndex, workspace, projectOrder, id} = req.body;
@@ -253,16 +241,16 @@ app.post("/projects", async (req, res, next) => {
 });
 
 // --- delete project ---
-app.delete("/projects/:projectId", async (req, res) => {
-    const {workspace, projectOrder} = req.body;
-    const projectId = req.params.projectId;
+app.delete("/workspaces/:workspaceId/projects/:projectId", async (req, res) => {
+    const {workspaceId, projectId} = req.params;
 
     try {
-        await db.doc(`/projects/${projectId}`).delete();
-        await db.doc(`/workspaces/${workspace}`).update({
-            projectOrder,
+        const workspaceRef = db.doc(`/workspaces/${workspaceId}`);
+        await workspaceRef.update({
+            projectOrder: admin.firestore.FieldValue.arrayRemove(projectId),
         });
 
+        await db.doc(`/projects/${projectId}`).delete();
         res
             .status(200)
             .send({message: `project ${projectId} is successfully deleted.`});
@@ -287,33 +275,6 @@ app.put(`/projects/:projectId`, async (req, res) => {
         console.log(e);
     }
 });
-
-// --- add task ---
-// app.post("/tasks", async (req, res) => {
-//     let {name, description, projectId, authorId, columnId, taskIds, id} = req.body;
-
-//     const taskId = id;
-
-//     await db.collection("tasks").doc(taskId).set({
-//         name,
-//         description,
-//         authorId,
-//         projectId,
-//         isCompleted: false,
-//         createdOn: admin.firestore.Timestamp.now(),
-//         assignedUserIds: [],
-//         attachments: [],
-//     });
-
-//     await db.doc(`/columns/${columnId}`).update({
-//         taskIds: [taskId, ...taskIds],
-//     });
-
-//     res.status(201).json({
-//         task: taskId,
-//         message: "Task added successfully",
-//     });
-// });
 
 // --- delete task ---
 app.delete("/tasks/:taskId", async (req, res) => {
@@ -450,6 +411,46 @@ app.get("/workspaces/:workspaceId/members", async (req, res) => {
     } catch (e) {
         console.log(e);
     }
+});
+
+// ============== init workspace with user id =========================
+app.options("/initUser/:userId", async (req, res) => {
+    const {userId} = req.params;
+    const workspaceId = db.collection("/workspaces").doc().id;
+    const projectId = db.collection("/projects").doc().id;
+
+    // project
+    await db.doc(`/projects/${projectId}`).set({
+        workspace: workspaceId,
+        columnOrder: [],
+        colorIndex: Math.floor(Math.random() * 16),
+        iconIndex: Math.floor(Math.random() * 28),
+        createdOn: admin.firestore.Timestamp.now(),
+        name: "Welcome",
+    });
+    // workspace
+    await db.doc(`/workspaces/${workspaceId}`).set({
+        type: "personal",
+        members: [userId],
+        projectOrder: [projectId], // todo - add project id in it
+        userId: userId,
+    });
+    // user
+    await db.doc(`/users/${userId}`).set({
+        avatar: "",
+        colorIndex: Math.floor(Math.random() * 16),
+        email: "",
+        firstName: "Guest",
+        lastName: "Guest",
+        workspaces: [workspaceId],
+        privateProjects: [],
+        starredProjects: [projectId],
+    });
+
+    res.status(201).json({
+        message: "init anonymous user - success",
+        userId: userId,
+    });
 });
 
 export const api = functions.https.onRequest(app);
