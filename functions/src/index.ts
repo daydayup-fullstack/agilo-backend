@@ -7,6 +7,7 @@ import * as bodyParser from "koa-bodyparser";
 import handshake from "./controllers/handshake";
 import getUsers from "./controllers/user/get";
 import getProject from "./controllers/project/get";
+import getWorkspace from "./controllers/workspace/get";
 
 admin.initializeApp({
     credential: admin.credential.cert(require("./serviceAccount.json")),
@@ -27,5 +28,8 @@ router.get("/users/:id", getUsers);
 
 // === project ===
 router.get("/projects/:id", getProject);
+
+// === workspace ===
+router.get("/workspaces/:id", getWorkspace)
 
 export const api = functions.https.onRequest(app.callback());
