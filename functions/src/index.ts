@@ -1,8 +1,8 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import * as Koa from "koa";
-import * as cors from "koa__cors";
-import * as Router from "koa-router";
+import * as cors from "@koa/cors";
+import * as Router from "@koa/router";
 import * as bodyParser from "koa-bodyparser";
 
 admin.initializeApp({
