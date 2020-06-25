@@ -11,7 +11,7 @@ const getUsers = async (ctx: any) => {
         if (!snapshot.data()) {
             ctx.status = 404;
             ctx.body = {
-                message: "Couldn't found user",
+                message: `User - ${userId} is not found.`,
             };
         }
 

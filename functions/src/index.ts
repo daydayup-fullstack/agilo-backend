@@ -6,6 +6,7 @@ import * as Router from "@koa/router";
 import * as bodyParser from "koa-bodyparser";
 import handshake from "./controllers/handshake";
 import getUsers from "./controllers/user/get";
+import getProject from "./controllers/project/get";
 
 admin.initializeApp({
     credential: admin.credential.cert(require("./serviceAccount.json")),
@@ -23,5 +24,8 @@ router.get("/", handshake);
 
 // === user ===
 router.get("/users/:id", getUsers);
+
+// === project ===
+router.get("/projects/:id", getProject);
 
 export const api = functions.https.onRequest(app.callback());
