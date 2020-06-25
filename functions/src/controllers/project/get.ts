@@ -53,9 +53,9 @@ const getProject = async (ctx: any) => {
         ctx.body = {columns: columns, tasks: tasks};
     } catch (e) {
         console.log(e);
-        ctx.status = 500;
+        ctx.status = e.status || 500;
         ctx.body = {
-            message: `Internal Server Error: ${e.message}`,
+            message: e.message,
         };
     }
 };

@@ -8,6 +8,7 @@ import handshake from "./controllers/handshake";
 import getUsers from "./controllers/user/get";
 import getProject from "./controllers/project/get";
 import getWorkspace from "./controllers/workspace/get";
+import updateUser from "./controllers/user/update";
 
 admin.initializeApp({
     credential: admin.credential.cert(require("./serviceAccount.json")),
@@ -25,11 +26,12 @@ router.get("/", handshake);
 
 // === user ===
 router.get("/users/:id", getUsers);
+router.put("/users/:id", updateUser);
 
 // === project ===
 router.get("/projects/:id", getProject);
 
 // === workspace ===
-router.get("/workspaces/:id", getWorkspace)
+router.get("/workspaces/:id", getWorkspace);
 
 export const api = functions.https.onRequest(app.callback());

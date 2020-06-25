@@ -48,9 +48,9 @@ const getUsers = async (ctx: any) => {
     } catch (error) {
         console.log(error);
 
-        ctx.status = 500;
+        ctx.status = error.status || 500;
         ctx.body = {
-            message: `Internal server error - ${error.message}`,
+            message: error.message,
         };
     }
 };
