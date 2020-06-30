@@ -10,6 +10,7 @@ import updateTask from "./controllers/task/update";
 import deleteTask from "./controllers/task/delete";
 import createColumn from "./controllers/column/create";
 import deleteColumn from "./controllers/column/delete";
+import updateColumn from "./controllers/column/update";
 
 const router = new Router();
 
@@ -33,5 +34,6 @@ router.put("/tasks/:id", updateTask);
 // === column ===
 router.post("/columns", createColumn);
 router.delete("/columns/:id", deleteColumn);
+router.put("/columns/:id", updateColumn);
 
 export default router;
