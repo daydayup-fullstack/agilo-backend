@@ -1,8 +1,11 @@
 import loadProjects from "../../services/loadProjects";
-import {db} from "../../index";
 
 const getWorkspace = async (ctx: any) => {
     const workspaceId = ctx.params.id;
+    const db = ctx.db;
+
+    console.log(db);
+
     try {
         const snapshot = await db.doc(`/workspaces/${workspaceId}`).get();
 
@@ -13,7 +16,7 @@ const getWorkspace = async (ctx: any) => {
             };
         }
 
-        const data = await loadProjects(workspaceId);
+        const data = await loadProjects(ctx, workspaceId);
 
         ctx.body = {
             workspace: data.workspace,

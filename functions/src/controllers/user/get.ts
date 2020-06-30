@@ -1,9 +1,9 @@
 import {HomepageDataType, User} from "../../interface";
 import loadProjects from "../../services/loadProjects";
-import {db} from "../../index";
 
 const getUsers = async (ctx: any) => {
     const userId = ctx.params.id;
+    const db = ctx.db;
 
     try {
         const snapshot = await db.doc(`/users/${userId}`).get();
@@ -21,7 +21,7 @@ const getUsers = async (ctx: any) => {
         } as User;
 
         const workspaceId = user.workspaces[0];
-        const data = await loadProjects(workspaceId);
+        const data = await loadProjects(ctx, workspaceId);
 
         const wpSnapshot = await db
             .collection(`/workspaces`)
@@ -30,7 +30,7 @@ const getUsers = async (ctx: any) => {
 
         let allWorkspaces = {};
 
-        wpSnapshot.docs.forEach((doc) => {
+        wpSnapshot.docs.forEach((doc: any) => {
             allWorkspaces = {
                 ...allWorkspaces,
                 [doc.id]: {

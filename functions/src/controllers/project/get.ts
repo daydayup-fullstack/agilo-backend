@@ -1,7 +1,9 @@
-import {db} from "../../index";
+import {QueryDocumentSnapshot} from "firebase-functions/lib/providers/firestore";
 
 const getProject = async (ctx: any) => {
     const projectId = ctx.params.id;
+    const db = ctx.db;
+
 
     try {
         const projectSnapshot = await db
@@ -30,7 +32,7 @@ const getProject = async (ctx: any) => {
         let tasks = {};
         let columns = {};
 
-        snapshot.docs.map((doc) => {
+        snapshot.docs.map((doc: QueryDocumentSnapshot) => {
             tasks = {
                 ...tasks,
                 [doc.id]: {
@@ -40,7 +42,7 @@ const getProject = async (ctx: any) => {
             };
         });
 
-        columnSnapshot.docs.map((doc) => {
+        columnSnapshot.docs.map((doc: QueryDocumentSnapshot) => {
             columns = {
                 ...columns,
                 [doc.id]: {

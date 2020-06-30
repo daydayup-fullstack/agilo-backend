@@ -1,7 +1,8 @@
 import {Project, Workspace} from "../interface";
-import {db} from "../index";
+import {QueryDocumentSnapshot} from "firebase-functions/lib/providers/firestore";
 
-const loadProjects = async (workspaceId: string): Promise<any> => {
+const loadProjects = async (ctx: any, workspaceId: string): Promise<any> => {
+    const db = ctx.db;
     const workspaceSnapshot = await db.doc(`/workspaces/${workspaceId}`).get();
 
     let {
@@ -26,33 +27,35 @@ const loadProjects = async (workspaceId: string): Promise<any> => {
         .where("workspace", "==", workspaceId)
         .get();
 
-    const projectsData = projectsSnapshot.docs.map((doc) => {
-        let {
-            createdOn,
-            columnOrder,
-            colorIndex,
-            iconIndex,
-            name,
-            activeUsers,
-        } = doc.data() as Project;
+    const projectsData = projectsSnapshot.docs.map(
+        (doc: QueryDocumentSnapshot) => {
+            let {
+                createdOn,
+                columnOrder,
+                colorIndex,
+                iconIndex,
+                name,
+                activeUsers,
+            } = doc.data() as Project;
 
-        return {
-            id: doc.id,
-            createdOn,
-            columnOrder,
-            colorIndex,
-            iconIndex,
-            name,
-            activeUsers,
-        };
-    });
+            return {
+                id: doc.id,
+                createdOn,
+                columnOrder,
+                colorIndex,
+                iconIndex,
+                name,
+                activeUsers,
+            };
+        }
+    );
 
     const membersSnaphot = await db
         .collection("/users")
         .where("workspaces", "array-contains", workspaceId)
         .get();
 
-    const allMembers = membersSnaphot.docs.map((doc) => {
+    const allMembers = membersSnaphot.docs.map((doc: QueryDocumentSnapshot) => {
         return {
             id: doc.id,
             ...doc.data(),
