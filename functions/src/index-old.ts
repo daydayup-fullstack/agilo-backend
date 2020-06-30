@@ -25,7 +25,6 @@ app.get("/", (req, res) => {
         message: "hello world!",
     });
 });
-
 const loadProjects = async (workspaceId: string): Promise<any> => {
     const workspaceSnapshot = await db.doc(`/workspaces/${workspaceId}`).get();
 

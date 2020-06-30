@@ -4,6 +4,7 @@ import * as Router from "@koa/router";
 import getProject from "./controllers/project/get";
 import getWorkspace from "./controllers/workspace/get";
 import createProject from "./controllers/project/create";
+import deleteProject from "./controllers/project/delete";
 
 const router = new Router();
 
@@ -14,15 +15,9 @@ router.put("/users/:id", updateUser);
 // === project ===
 router.get("/projects/:id", getProject);
 router.post("/projects", createProject);
+router.delete("/workspaces/:workspaceId/projects/:projectId", deleteProject);
 
 // // === workspace ===
 router.get("/workspaces/:id", getWorkspace);
 
-router.post("/test", async (ctx) => {
-    const {body} = ctx.req as any;
-    ctx.body = {
-        message: "success",
-        body: body,
-    };
-});
 export default router;
