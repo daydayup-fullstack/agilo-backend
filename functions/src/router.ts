@@ -11,6 +11,7 @@ import deleteTask from "./controllers/task/delete";
 import createColumn from "./controllers/column/create";
 import deleteColumn from "./controllers/column/delete";
 import updateColumn from "./controllers/column/update";
+import getMembers from "./controllers/workspace/getMembers";
 
 const router = new Router();
 
@@ -26,6 +27,7 @@ router.put("/projects/:id", updateProject);
 
 // // === workspace ===
 router.get("/workspaces/:id", getWorkspace);
+router.get("/workspaces/:id/members", getMembers);
 
 // === task ===
 router.delete("/tasks/:id", deleteTask);
