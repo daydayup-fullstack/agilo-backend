@@ -9,6 +9,7 @@ import updateProject from "./controllers/project/update";
 import updateTask from "./controllers/task/update";
 import deleteTask from "./controllers/task/delete";
 import createColumn from "./controllers/column/create";
+import deleteColumn from "./controllers/column/delete";
 
 const router = new Router();
 
@@ -31,4 +32,6 @@ router.put("/tasks/:id", updateTask);
 
 // === column ===
 router.post("/columns", createColumn);
+router.delete("/columns/:id", deleteColumn);
+
 export default router;
