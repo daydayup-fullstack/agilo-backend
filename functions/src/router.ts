@@ -5,6 +5,7 @@ import getProject from "./controllers/project/get";
 import getWorkspace from "./controllers/workspace/get";
 import createProject from "./controllers/project/create";
 import deleteProject from "./controllers/project/delete";
+import updateProject from "./controllers/project/update";
 
 const router = new Router();
 
@@ -16,6 +17,7 @@ router.put("/users/:id", updateUser);
 router.get("/projects/:id", getProject);
 router.post("/projects", createProject);
 router.delete("/workspaces/:workspaceId/projects/:projectId", deleteProject);
+router.put("/projects/:id", updateProject);
 
 // // === workspace ===
 router.get("/workspaces/:id", getWorkspace);
