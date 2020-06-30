@@ -8,6 +8,7 @@ import deleteProject from "./controllers/project/delete";
 import updateProject from "./controllers/project/update";
 import updateTask from "./controllers/task/update";
 import deleteTask from "./controllers/task/delete";
+import createColumn from "./controllers/column/create";
 
 const router = new Router();
 
@@ -27,4 +28,7 @@ router.get("/workspaces/:id", getWorkspace);
 // === task ===
 router.delete("/tasks/:id", deleteTask);
 router.put("/tasks/:id", updateTask);
+
+// === column ===
+router.post("/columns", createColumn);
 export default router;
