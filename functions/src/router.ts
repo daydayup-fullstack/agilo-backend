@@ -1,12 +1,13 @@
+import * as Router from "@koa/router";
 import getUsers from "./controllers/user/get";
 import updateUser from "./controllers/user/update";
-import * as Router from "@koa/router";
 import getProject from "./controllers/project/get";
 import getWorkspace from "./controllers/workspace/get";
 import createProject from "./controllers/project/create";
 import deleteProject from "./controllers/project/delete";
 import updateProject from "./controllers/project/update";
 import updateTask from "./controllers/task/update";
+import deleteTask from "./controllers/task/delete";
 
 const router = new Router();
 
@@ -23,7 +24,7 @@ router.put("/projects/:id", updateProject);
 // // === workspace ===
 router.get("/workspaces/:id", getWorkspace);
 
-
 // === task ===
+router.delete("/tasks/:id", deleteTask);
 router.put("/tasks/:id", updateTask);
 export default router;
