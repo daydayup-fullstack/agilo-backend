@@ -1,6 +1,7 @@
 const updateUser = async (ctx: any) => {
     const db = ctx.db;
     const userId = ctx.params.id;
+    const {body} = ctx.req;
 
     try {
         const userRef = db.doc(`/users/${userId}`);
@@ -15,7 +16,7 @@ const updateUser = async (ctx: any) => {
         }
 
         const result = await userRef.update({
-            ...ctx.body,
+            ...body,
         });
 
         ctx.body = {

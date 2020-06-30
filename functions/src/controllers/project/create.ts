@@ -1,13 +1,22 @@
+import * as admin from "firebase-admin";
 
 const createProject = async (ctx: any) => {
-    // const {name, colorIndex, iconIndex, workspace, projectOrder, id} = ctx.body;
+    const {
+        name,
+        colorIndex,
+        iconIndex,
+        workspace,
+        projectOrder,
+        id,
+    } = ctx.req.body;
 
     ctx.body = {
-        ...ctx.body
-    }
-
-    return;
-
+        name,
+        colorIndex,
+        id,
+    };
+    // const db = ctx.db;
+    //
     // try {
     //     await db.collection("projects").doc(id).set({
     //         name,

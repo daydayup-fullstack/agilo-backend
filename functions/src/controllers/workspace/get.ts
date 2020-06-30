@@ -4,8 +4,6 @@ const getWorkspace = async (ctx: any) => {
     const workspaceId = ctx.params.id;
     const db = ctx.db;
 
-    console.log(db);
-
     try {
         const snapshot = await db.doc(`/workspaces/${workspaceId}`).get();
 
