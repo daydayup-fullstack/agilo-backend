@@ -12,6 +12,7 @@ import createColumn from "./controllers/column/create";
 import deleteColumn from "./controllers/column/delete";
 import updateColumn from "./controllers/column/update";
 import getMembers from "./controllers/workspace/getMembers";
+import initUser from "./controllers/user/initUser";
 
 const router = new Router();
 
@@ -37,5 +38,8 @@ router.put("/tasks/:id", updateTask);
 router.post("/columns", createColumn);
 router.delete("/columns/:id", deleteColumn);
 router.put("/columns/:id", updateColumn);
+
+// === init user ===
+router.options("/initUser/:userId", initUser);
 
 export default router;
