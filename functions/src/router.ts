@@ -40,6 +40,6 @@ router.delete("/columns/:id", deleteColumn);
 router.put("/columns/:id", updateColumn);
 
 // === init user ===
-router.options("/initUser/:userId", initUser);
+router.post("/initUser/:userId", initUser);
 
 export default router;
