@@ -14,6 +14,7 @@ import updateColumn from "./controllers/column/update";
 import getMembers from "./controllers/workspace/getMembers";
 import initUser from "./controllers/user/initUser";
 import createWorkspace from "./controllers/workspace/create";
+import updateMembers from "./controllers/workspace/updateMembers";
 
 const router = new Router();
 
@@ -31,6 +32,7 @@ router.put("/projects/:id", updateProject);
 // // === workspace ===
 router.get("/workspaces/:id", getWorkspace);
 router.get("/workspaces/:id/members", getMembers);
+router.put("/workspaces/:id/members", updateMembers);
 
 // === task ===
 router.delete("/tasks/:id", deleteTask);

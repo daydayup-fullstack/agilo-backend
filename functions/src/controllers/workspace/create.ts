@@ -7,8 +7,7 @@ interface ReqBodyType {
 
 const createWorkspace = async (ctx: any) => {
     const db = ctx.db;
-    // const workspaceId = db.collection("/workspaces").doc().id;
-    const workspaceId = "blah blah blah"
+    const workspaceId = db.collection("/workspaces").doc().id;
     const projectId = db.collection("/projects").doc().id;
     const {userId} = ctx.params;
     const {name, emails} = ctx.req.body as ReqBodyType;
@@ -47,8 +46,9 @@ const createWorkspace = async (ctx: any) => {
 
         const sharedWorkspace = {
             type: "team",
+            name: name,
             members: members,
-            projectOrder: []
+            projectOrder: [projectId]
         }
 
         const sharedStartingProject = {
@@ -80,8 +80,11 @@ const createWorkspace = async (ctx: any) => {
             })
         })
 
+        await batch.commit();
+
         ctx.status = 201;
         ctx.body = {
+            message: "shared workspace created",
             sharedWorkspace,
             sharedStartingProject
         };
