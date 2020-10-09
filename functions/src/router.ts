@@ -20,6 +20,7 @@ const router = new Router();
 // === user ===
 router.get("/users/:id", getUsers);
 router.put("/users/:id", updateUser);
+router.post("/users/:userId/workspaces", createWorkspace);
 
 // === project ===
 router.get("/projects/:id", getProject);
@@ -30,7 +31,6 @@ router.put("/projects/:id", updateProject);
 // // === workspace ===
 router.get("/workspaces/:id", getWorkspace);
 router.get("/workspaces/:id/members", getMembers);
-router.post("/workspaces", createWorkspace);
 
 // === task ===
 router.delete("/tasks/:id", deleteTask);
