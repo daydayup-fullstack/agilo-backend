@@ -38,24 +38,37 @@ const updateMembers = async (ctx: any) => {
         }
 
         // got all the userId by looking for each email address
-        users.forEach((userId: string) => {
+        for (const userId of users) {
             if (userId) {
                 const userRef = db.doc(`/users/${userId}`);
-                userRef.update({
+                await userRef.update({
                     workspaces: admin.firestore.FieldValue.arrayUnion(id)
                 })
-                workspaceRef.update({
+                await workspaceRef.update({
                     members: admin.firestore.FieldValue.arrayUnion(userId)
                 })
             }
-        })
+        }
+
+        const snapshot = await db
+            .collection("/users")
+            .where("workspaces", "array-contains", id)
+            .get();
+
+        users = snapshot.docs.map((doc: any) => {
+            return {
+                id: doc.id,
+                ...doc.data(),
+            };
+        });
+
 
         ctx.status = 200;
         ctx.body = {
             message: `Workspace ${id} updated`,
-            members: emails,
-            users: users
-        }
+            emails: emails,
+            allMembers: users
+        };
 
 
     } catch (e) {

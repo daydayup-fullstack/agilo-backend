@@ -15,6 +15,7 @@ import getMembers from "./controllers/workspace/getMembers";
 import initUser from "./controllers/user/initUser";
 import createWorkspace from "./controllers/workspace/create";
 import updateMembers from "./controllers/workspace/updateMembers";
+import getWorkspaces from "./controllers/user/getWorkspaces";
 
 const router = new Router();
 
@@ -22,6 +23,7 @@ const router = new Router();
 router.get("/users/:id", getUsers);
 router.put("/users/:id", updateUser);
 router.post("/users/:userId/workspaces", createWorkspace);
+router.get("/users/:userId/workspaces", getWorkspaces);
 
 // === project ===
 router.get("/projects/:id", getProject);
